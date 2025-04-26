@@ -34,7 +34,7 @@
                             </td>
                             <td>
                                 <button wire:click="editUserRoles({{ $user->id }})"
-                                        class="btn btn-info" title="Edit Roles">
+                                         title="Edit Roles" style="background-color: #152755; color: white;" class="btn">
                                     <i class="fa fa-edit"></i> Edit Roles
                                 </button>
                             </td>

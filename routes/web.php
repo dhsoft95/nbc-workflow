@@ -1,10 +1,13 @@
 <?php
 
 use App\Http\Controllers\RoleManagementController;
+use App\Livewire\Integration\CreateRequest;
+use App\Livewire\Integration\IntegrationsList;
+use App\Livewire\Integration\MyRequests;
+use App\Livewire\Integration\PendingApprovals;
+use App\Livewire\Integration\ShowRequest;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
-
-// Authentication Routes (add these to your routes/web.php file)
 
 // Authentication Routes (add these to your routes/web.php file)
 
@@ -68,10 +71,62 @@ Route::middleware('auth')->group(function () {
 
 
 Route::middleware(['auth'])->group(function () {
-//    Route::get('/admin/roles', [RoleManagementController::class, 'index'])->name('roles.index');
     Route::get('/admin/users/roles', [RoleManagementController::class, 'userRoles'])->name('users.roles');
 });
 
 Route::middleware(['auth', 'permission:manage roles'])->group(function () {
     Route::get('/admin/roles', [RoleManagementController::class, 'index'])->name('roles.index');
+});
+
+
+Route::middleware('auth')->group(function () {
+    // All integrations
+    Route::get('/integrations', IntegrationsList::class)->name('integrations.index');
+
+    // Create new integration request - Integration type selection screen
+    Route::get('/integrations/create', function() {
+        return view('integration.select');
+    })->name('integrations.create');
+
+    // Show integration details
+//    Route::get('/integrations/{integration}', App\Livewire\Integration\ShowRequest::class)->name('integrations.show');
+
+    Route::get('integrations/{integration}', function(App\Models\Integration $integration) {
+        return view('livewire.integration.show', ['integration' => $integration]);
+    })->name('integrations.show');
+
+    // My integration requests
+    Route::get('/my-integrations', MyRequests::class)->name('integrations.my');
+
+    // Pending approvals
+    Route::get('/pending-approvals', PendingApprovals::class)->name('integrations.pending');
+
+    // Integration form routes
+    Route::get('integrations/internal/create', function() {
+        return view('livewire.integration.internal');
+    })->name('integrations.internal.create');
+
+    Route::get('integrations/external/create', function() {
+        return view('livewire.integration.external');
+    })->name('integrations.external.create');
+});
+
+Route::middleware(['auth', 'role:administrator'])->prefix('admin')->name('admin.')->group(function () {
+    // User Management
+    Route::get('/users', function () {
+        return view('admin.users.index');
+    })->name('users.index');
+    // Configuration Management
+    Route::get('/configurations', function () {
+        return view('admin.configurations.index');
+    })->name('configurations.index')->middleware('permission:manage configuration');
+
+    Route::get('/vendors', function () {
+        return view('admin.vendors.index');
+    })->name('vendors.index')->middleware('permission:view vendor');
+    Route::get('/sla-configurations', function () {
+        return view('admin.sla-configurations.index');
+    })->name('sla-configurations.index')
+        ->middleware('permission:manage configuration');
+
 });

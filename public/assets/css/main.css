@@ -1909,7 +1909,7 @@
     --primary-color3: #A37ADB;
     --secondary-color: #E76886;
     --secondary-color2: rgb(223, 126, 148);
-    --link-color: #59C4BC;
+    --link-color: #152755;
     --primary-gradient: linear-gradient(45deg, #7B54B1, #E76886)
 }
 
@@ -1924,13 +1924,13 @@
 }
 
 [class="theme-cyan"] {
-    --primary-color: #59C4BC;
+    --primary-color: #152755;
     --primary-color2: #33BAB0;
     --primary-color3: #8BCEC9;
     --secondary-color: #637AAE;
     --secondary-color2: #00ACEE;
     --link-color: #E76886;
-    --primary-gradient: linear-gradient(45deg, #59C4BC, #637AAE)
+    --primary-gradient: linear-gradient(45deg, #152755, #637AAE)
 }
 
 [class="theme-green"] {

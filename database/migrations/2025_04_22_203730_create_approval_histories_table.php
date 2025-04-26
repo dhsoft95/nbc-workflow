@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('integration_id')->constrained()->onDelete('cascade');
             $table->string('stage'); // app_owner, idi, security, infrastructure
-            $table->enum('action', ['approved', 'rejected', 'returned']);
+            $table->enum('action', ['approved', 'rejected', 'returned','submitted']);
             $table->foreignId('user_id')->constrained(); // Who performed the action
             $table->text('comments')->nullable();
             $table->string('return_to_stage')->nullable(); // If returned, which stage

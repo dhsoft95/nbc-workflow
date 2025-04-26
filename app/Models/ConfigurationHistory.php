@@ -11,7 +11,7 @@ class ConfigurationHistory extends Model
 {
     use HasFactory ,HasRoles;
 
-    protected $table = 'configuration_history';
+    protected $table = 'configuration_histories';
 
     protected $fillable = [
         'category_id',

@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Services\IntegrationApprovalService;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -9,16 +10,24 @@ use Symfony\Component\HttpFoundation\Response;
 class CheckIntegrationPermission
 {
     /**
-     * Handle an incoming request.
+     * Register services.
      *
-     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
+     * @return void
      */
-    public function handle(Request $request, Closure $next, $permission)
+    public function register()
     {
-        if (!auth()->user()->can($permission)) {
-            abort(403, 'Unauthorized action.');
-        }
+        $this->app->singleton(IntegrationApprovalService::class, function ($app) {
+            return new IntegrationApprovalService();
+        });
+    }
 
-        return $next($request);
+    /**
+     * Bootstrap services.
+     *
+     * @return void
+     */
+    public function boot()
+    {
+        //
     }
 }

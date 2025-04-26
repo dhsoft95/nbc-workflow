@@ -180,13 +180,13 @@
         });
     });
     // Emit flash messages from session data
-    @if(session() - > has('message'))
+    @if(session() -> has('message'))
     Livewire.dispatch('showToastr', {
         type: 'success',
         message: "{{ session('message') }}"
     });
     @endif
-    @if(session() - > has('error'))
+    @if(session() -> has('error'))
     Livewire.dispatch('showToastr', {
         type: 'error',
         message: "{{ session('error') }}"

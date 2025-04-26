@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('category_id')->constrained('configuration_categories');
             $table->foreignId('item_id')->nullable()->constrained('configuration_items');
-            $table->string('action'); // added, updated, deleted, activated, deactivated
+            $table->string('action');
             $table->text('old_value')->nullable();
             $table->text('new_value')->nullable();
             $table->foreignId('user_id')->constrained();
