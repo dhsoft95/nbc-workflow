@@ -9,8 +9,11 @@ use App\Livewire\Integration\ShowRequest;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
-// Authentication Routes (add these to your routes/web.php file)
 
+
+Route::get('/', function () {
+    return redirect('/login');
+});
 // Login Routes
 Route::get('/login', [App\Http\Controllers\AuthenticationController::class, 'showLoginForm'])
     ->name('login')
@@ -88,8 +91,6 @@ Route::middleware('auth')->group(function () {
         return view('integration.select');
     })->name('integrations.create');
 
-    // Show integration details
-//    Route::get('/integrations/{integration}', App\Livewire\Integration\ShowRequest::class)->name('integrations.show');
 
     Route::get('integrations/{integration}', function(App\Models\Integration $integration) {
         return view('livewire.integration.show', ['integration' => $integration]);
