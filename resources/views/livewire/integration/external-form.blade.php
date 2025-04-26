@@ -1,5 +1,6 @@
 <div>
     <!-- Draft management section -->
+
     @if($has_draft)
         <div class="alert alert-info d-flex justify-content-between align-items-center">
             <div>
@@ -130,35 +131,52 @@
 
         <!-- Step 2: External Integration Details -->
         <div class="card mb-4 {{ $currentStep != 2 ? 'd-none' : '' }}">
-            <div class="card-header  text-white" style="background-color: #152755;">
+            <div class="card-header text-white" style="background-color: #152755;">
                 <h5 class="mb-0">Step 2: External Integration Details</h5>
             </div>
             <div class="card-body">
-                <div class="form-group">
-                    <label>Vendor</label>
-                    <div class="custom-control custom-radio">
-                        <input type="radio" id="is-new-vendor-yes" name="is_new_vendor" class="custom-control-input" value="1"
-                               wire:model="is_new_vendor">
-                        <label class="custom-control-label" for="is-new-vendor-yes">New Vendor</label>
+                <!-- Vendor Selection -->
+                <div class="card mb-3">
+                    <div class="card-header bg-light">
+                        <h6 class="mb-0">Vendor Information</h6>
                     </div>
-                    <div class="custom-control custom-radio">
-                        <input type="radio" id="is-new-vendor-no" name="is_new_vendor" class="custom-control-input" value="0"
-                               wire:model="is_new_vendor">
-                        <label class="custom-control-label" for="is-new-vendor-no">Existing Vendor</label>
-                    </div>
-                    @error('is_new_vendor') <div class="text-danger mt-1">{{ $message }}</div> @enderror
-                </div>
+                    <div class="card-body">
+                        <!-- Vendor Type Selection -->
+                        <div class="form-group mb-4">
+                            <label class="d-block font-weight-bold">Vendor Type</label>
+                            <div class="btn-group btn-group-toggle w-100" data-toggle="buttons">
+                                <label class="btn btn-outline-primary {{ $vendor_selection == 'new' ? 'active' : '' }} flex-grow-1"
+                                       wire:click="$set('vendor_selection', 'new')">
+                                    <input type="radio" name="vendor_selection" value="new"
+                                        {{ $vendor_selection == 'new' ? 'checked' : '' }}>
+                                    <i class="fa fa-plus-circle mr-1"></i> New Vendor
+                                </label>
+                                <label class="btn btn-outline-primary {{ $vendor_selection == 'existing' ? 'active' : '' }} flex-grow-1"
+                                       wire:click="$set('vendor_selection', 'existing')">
+                                    <input type="radio" name="vendor_selection" value="existing"
+                                        {{ $vendor_selection == 'existing' ? 'checked' : '' }}>
+                                    <i class="fa fa-building mr-1"></i> Existing Vendor
+                                </label>
+                            </div>
+                            @error('vendor_selection') <div class="text-danger mt-1">{{ $message }}</div> @enderror
+                        </div>
 
-                <div class="form-group {{ $is_new_vendor ? 'd-none' : '' }}">
-                    <label for="vendor_id">Select Vendor</label>
-                    <select class="form-control @error('vendor_id') is-invalid @enderror" id="vendor_id"
-                            wire:model.defer="vendor_id">
-                        <option value="">Select vendor</option>
-                        @foreach($vendors as $vendor)
-                            <option value="{{ $vendor->id }}">{{ $vendor->name }}</option>
-                        @endforeach
-                    </select>
-                    @error('vendor_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                        <!-- Existing Vendor Selection (always shown but disabled when "New Vendor" is selected) -->
+                        <div class="form-group" id="existing-vendor-dropdown">
+                            <label for="vendor_id">Select Vendor</label>
+                            <select class="form-control @error('vendor_id') is-invalid @enderror" id="vendor_id"
+                                    wire:model="vendor_id" {{ $vendor_selection == 'new' ? 'disabled' : '' }}>
+                                <option value="">-- Select an existing vendor --</option>
+                                @foreach($vendors as $vendor)
+                                    <option value="{{ $vendor->id }}">{{ $vendor->name }}</option>
+                                @endforeach
+                            </select>
+                            @error('vendor_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                            <small class="form-text text-muted">
+                                {{ $vendor_selection == 'new' ? 'This field is disabled because you selected "New Vendor".' : 'Please select the vendor for this integration.' }}
+                            </small>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="form-group">
@@ -303,7 +321,7 @@
 
         <!-- Step 3: File Uploads -->
         <div class="card mb-4 {{ $currentStep != 3 ? 'd-none' : '' }}">
-            <div class="card-header  text-white" style="background-color: #152755;">
+            <div class="card-header text-white" style="background-color: #152755;">
                 <h5 class="mb-0">Step 3: File Attachments</h5>
             </div>
             <div class="card-body">
@@ -350,7 +368,7 @@
 
         <!-- Step 4: Review -->
         <div class="card mb-4 {{ $currentStep != 4 ? 'd-none' : '' }}">
-            <div class="card-header  text-white" style="background-color: #152755;">
+            <div class="card-header text-white" style="background-color: #152755;">
                 <h5 class="mb-0">Step 4: Review & Submit</h5>
             </div>
             <div class="card-body">
@@ -397,7 +415,7 @@
                     <tr>
                         <th style="width: 30%">Vendor</th>
                         <td>
-                            @if($is_new_vendor)
+                            @if($vendor_selection === 'new')
                                 New Vendor
                             @else
                                 Existing Vendor: {{ optional($vendors->where('id', $vendor_id)->first())->name ?? 'Not selected' }}
@@ -521,7 +539,7 @@
 
             <div>
                 @if($currentStep < $totalSteps)
-                    <button type="button" class="btn btn-primary" id="next-step-button" onclick="handleNextClick()">
+                    <button type="button" class="btn btn-primary" wire:click="nextStep">
                         Next →
                     </button>
                 @else
@@ -541,55 +559,16 @@
         <div class="mt-2">Processing your request, please wait...</div>
     </div>
 
-    <!-- JavaScript for button handling and file uploads -->
+    <!-- JavaScript for file uploads and vendor selection -->
     <script>
-        // Fix for Next button click handling
-        function handleNextClick() {
-            console.log('Next button clicked via onclick handler');
-
-            // Try different methods to trigger the nextStep function
-            try {
-                // Method 1: Direct call to nextStep
-            @this.nextStep();
-
-                // Method 2: If Method 1 fails, try with setTimeout
-                setTimeout(function() {
-                    console.log('Trying delayed nextStep call');
-                @this.nextStep();
-                }, 50);
-            } catch (error) {
-                console.error('Error calling nextStep:', error);
-            }
-        }
-
-        // Debug logging
-        function debugLog(message, data = null) {
-            if (document.getElementById('debug-messages')) {
-                const timestamp = new Date().toLocaleTimeString();
-                const msgContainer = document.createElement('div');
-                msgContainer.innerHTML = `<span class="text-muted">[${timestamp}]</span> <strong>${message}</strong>`;
-
-                if (data) {
-                    const dataStr = typeof data === 'object' ? JSON.stringify(data) : data;
-                    const dataContainer = document.createElement('pre');
-                    dataContainer.className = 'small bg-light p-1 mt-1 mb-2';
-                    dataContainer.textContent = dataStr;
-                    msgContainer.appendChild(dataContainer);
-                }
-
-                document.getElementById('debug-messages').appendChild(msgContainer);
-                console.log(`[${timestamp}] ${message}`, data || '');
-            }
-        }
-
         document.addEventListener('DOMContentLoaded', function() {
-            debugLog('External form loaded');
+            console.log('External form loaded');
 
             // Show processing indicator when submitting the form
             const submitButton = document.getElementById('submit-button');
             if (submitButton) {
                 submitButton.addEventListener('click', function() {
-                    debugLog('Submit button clicked');
+                    console.log('Submit button clicked');
                     document.getElementById('form-processing-indicator').classList.remove('d-none');
                 });
             }
@@ -603,7 +582,7 @@
                             let label = this.nextElementSibling;
                             if (label) {
                                 label.textContent = fileName;
-                                debugLog('File input changed', { input: this.id, filename: fileName });
+                                console.log('File input changed', { input: this.id, filename: fileName });
                             }
                         } catch (error) {
                             console.error('Error updating file label:', error);
@@ -614,17 +593,57 @@
 
             updateFileLabels();
 
+            // Vendor selection handling - ensure dropdown is enabled/disabled correctly
+            function updateVendorDropdown() {
+                try {
+                    const vendorSelection = document.querySelector('input[name="vendor_selection"]:checked')?.value || 'new';
+                    const vendorDropdown = document.getElementById('vendor_id');
+
+                    if (vendorDropdown) {
+                        if (vendorSelection === 'new') {
+                            vendorDropdown.disabled = true;
+                            vendorDropdown.value = '';
+                        } else {
+                            vendorDropdown.disabled = false;
+                        }
+                        console.log('Vendor dropdown state updated:', { selection: vendorSelection, disabled: vendorDropdown.disabled });
+                    }
+                } catch (error) {
+                    console.error('Error updating vendor dropdown:', error);
+                }
+            }
+
+            // Call initially and after any Livewire updates
+            updateVendorDropdown();
+
             // Re-attach handlers after Livewire updates
             document.addEventListener('livewire:update', function() {
-                setTimeout(updateFileLabels, 100);
+                setTimeout(function() {
+                    updateFileLabels();
+                    updateVendorDropdown();
+                }, 100);
             });
         });
 
-        // Auto-save form data every 2 minutes
+        // Livewire hook for auto-save and vendor dropdown handling
         document.addEventListener('livewire:load', function() {
+            // Handle vendor_selection changes - this complements the wire:click handlers
+            Livewire.hook('message.processed', (message, component) => {
+                // Toggle the vendor dropdown based on selection
+                const vendorDropdown = document.getElementById('vendor_id');
+                if (vendorDropdown) {
+                    const isNewVendor = @this.vendor_selection === 'new';
+                    vendorDropdown.disabled = isNewVendor;
+                    console.log('Livewire update - vendor dropdown state:', {
+                        disabled: vendorDropdown.disabled,
+                        selection: @this.vendor_selection
+                    });
+                }
+            });
+
             // Auto-save functionality
             setInterval(function() {
-                debugLog('Auto-save triggered');
+                console.log('Auto-save triggered');
             @this.emit('saveProgress');
             }, 120000); // 120000 ms = 2 minutes
         });

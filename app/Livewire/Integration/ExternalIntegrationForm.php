@@ -16,7 +16,7 @@ class ExternalIntegrationForm extends BaseIntegrationForm
     use WithFileUploads;
 
     // Override total steps
-    public $totalSteps = 4; // Including file uploads step
+    public $totalSteps = 4;
 
     // Update step completion array
     public function mount()
@@ -29,12 +29,15 @@ class ExternalIntegrationForm extends BaseIntegrationForm
             4 => false  // Review
         ];
 
+        // Set default vendor selection
+        $this->vendor_selection = 'new';
+
         // Call parent mount
         parent::mount();
     }
 
     // External integration fields
-    public $is_new_vendor = true;
+    public $vendor_selection = 'new'; // 'new' or 'existing'
     public $vendor_id = null;
     public $connection_method = '';
     public $network_requirements = '';
@@ -70,9 +73,13 @@ class ExternalIntegrationForm extends BaseIntegrationForm
         $this->loadDropdownOptions();
 
         // Convert boolean values to ensure proper handling
-        $this->is_new_vendor = (bool)$this->is_new_vendor;
         $this->legal_approval = (bool)$this->legal_approval;
         $this->compliance_approval = (bool)$this->compliance_approval;
+    }
+
+    protected function getFilePropertyNames()
+    {
+        return ['api_documentation_file', 'contract_file', 'test_plan_file'];
     }
 
     protected function loadDropdownOptions()
@@ -94,7 +101,7 @@ class ExternalIntegrationForm extends BaseIntegrationForm
 
                     $this->{$property} = $items->map(function ($item) {
                         return [
-                            'value' => $item->value ?? $item->id, // Use value field if available, otherwise ID
+                            'value' => $item->value ?? $item->id,
                             'label' => $item->name
                         ];
                     })->toArray();
@@ -108,27 +115,34 @@ class ExternalIntegrationForm extends BaseIntegrationForm
         }
     }
 
-    protected function getFilePropertyNames()
+    // Method for handling vendor dropdown selection changes
+    public function updatedVendorId($value)
     {
-        return ['api_documentation_file', 'contract_file', 'test_plan_file'];
+        // If a vendor is selected, ensure we're in 'existing' mode
+        if (!empty($value)) {
+            $this->vendor_selection = 'existing';
+        }
+
+        // Log for debugging
+        Log::info('Vendor ID changed', [
+            'vendor_id' => $value,
+            'selection' => $this->vendor_selection
+        ]);
     }
 
-    public function updatedVendorId()
+    // Method for handling vendor selection type changes (new/existing)
+    public function updatedVendorSelection($value)
     {
-        $this->is_new_vendor = empty($this->vendor_id);
-        Log::info('Vendor ID updated', ['vendor_id' => $this->vendor_id, 'is_new_vendor' => $this->is_new_vendor]);
-    }
-
-    public function updatedIsNewVendor($value)
-    {
-        // Convert string value from radio buttons to boolean
-        $this->is_new_vendor = filter_var($value, FILTER_VALIDATE_BOOLEAN);
-
-        if ($this->is_new_vendor) {
+        // Clear vendor_id if switching to new vendor
+        if ($value === 'new') {
             $this->vendor_id = null;
         }
 
-        Log::info('Is new vendor updated', ['is_new_vendor' => $this->is_new_vendor]);
+        // Log for debugging
+        Log::info('Vendor selection changed', [
+            'selection' => $value,
+            'vendor_id' => $this->vendor_id
+        ]);
     }
 
     protected function getStepValidationRules($step)
@@ -147,10 +161,10 @@ class ExternalIntegrationForm extends BaseIntegrationForm
                 ];
 
             case 2:
-                // External integration details validation
+                // External integration details validation with updated vendor validation
                 return [
-                    'is_new_vendor' => 'boolean',
-                    'vendor_id' => 'required_if:is_new_vendor,0,false|nullable|exists:vendors,id',
+                    'vendor_selection' => 'required|in:new,existing',
+                    'vendor_id' => 'required_if:vendor_selection,existing|nullable|exists:vendors,id',
                     'connection_method' => 'required|string',
                     'network_requirements' => 'nullable|string',
                     'authentication_method' => 'required|string',
@@ -190,8 +204,8 @@ class ExternalIntegrationForm extends BaseIntegrationForm
         // Create external integration record
         ExternalIntegration::create([
             'integration_id' => $integration->id,
-            'is_new_vendor' => (bool)$this->is_new_vendor,
-            'vendor_id' => $this->vendor_id,
+            'is_new_vendor' => $this->vendor_selection === 'new',
+            'vendor_id' => $this->vendor_selection === 'existing' ? $this->vendor_id : null,
             'connection_method' => $this->connection_method,
             'network_requirements' => $this->network_requirements,
             'authentication_method' => $this->authentication_method,
@@ -224,26 +238,32 @@ class ExternalIntegrationForm extends BaseIntegrationForm
         ];
 
         foreach ($files as $fileField => $fileType) {
-            if ($this->{$fileField} && is_object($this->{$fileField})) {
+            if ($this->{$fileField}) {
                 try {
-                    $file = $this->{$fileField};
-                    $path = $file->store('attachments/' . $integration->id, 'public');
+                    // Check if it's a valid file object
+                    if (is_object($this->{$fileField}) && method_exists($this->{$fileField}, 'store')) {
+                        $file = $this->{$fileField};
+                        $path = $file->store('attachments/' . $integration->id, 'public');
 
-                    Attachment::create([
-                        'integration_id' => $integration->id,
-                        'type' => $fileType,
-                        'filename' => basename($path),
-                        'original_filename' => $file->getClientOriginalName(),
-                        'mime_type' => $file->getMimeType(),
-                        'size' => $file->getSize(),
-                        'path' => $path,
-                        'uploaded_by' => Auth::id(),
-                    ]);
+                        Attachment::create([
+                            'integration_id' => $integration->id,
+                            'type' => $fileType,
+                            'filename' => basename($path),
+                            'original_filename' => $file->getClientOriginalName(),
+                            'mime_type' => $file->getMimeType(),
+                            'size' => $file->getSize(),
+                            'path' => $path,
+                            'uploaded_by' => Auth::id(),
+                        ]);
 
-                    Log::info("File uploaded: {$fileType}", [
-                        'original_name' => $file->getClientOriginalName(),
-                        'path' => $path
-                    ]);
+                        // Clear the file property after successful upload
+                        $this->{$fileField} = null;
+
+                        Log::info("File uploaded: {$fileType}", [
+                            'original_name' => $file->getClientOriginalName(),
+                            'path' => $path
+                        ]);
+                    }
                 } catch (\Exception $e) {
                     Log::error("File upload failed for {$fileField}: " . $e->getMessage());
                     // Continue without failing if file uploads have issues
@@ -255,8 +275,8 @@ class ExternalIntegrationForm extends BaseIntegrationForm
     protected function getTypeSpecificValidationRules()
     {
         $rules = [
-            'is_new_vendor' => 'boolean',
-            'vendor_id' => 'required_if:is_new_vendor,0,false|nullable|exists:vendors,id',
+            'vendor_selection' => 'required|in:new,existing',
+            'vendor_id' => 'required_if:vendor_selection,existing|nullable|exists:vendors,id',
             'connection_method' => 'required|string',
             'network_requirements' => 'nullable|string',
             'authentication_method' => 'required|string',
@@ -284,7 +304,7 @@ class ExternalIntegrationForm extends BaseIntegrationForm
 
     protected function resetTypeSpecificFields()
     {
-        $this->is_new_vendor = true;
+        $this->vendor_selection = 'new';
         $this->vendor_id = null;
         $this->connection_method = '';
         $this->network_requirements = '';
@@ -302,7 +322,7 @@ class ExternalIntegrationForm extends BaseIntegrationForm
         $this->issue_log = '';
         $this->business_impact = '';
 
-        // Reset file uploads
+        // Reset file uploads - important to prevent serialization errors
         $this->api_documentation_file = null;
         $this->contract_file = null;
         $this->test_plan_file = null;
@@ -313,6 +333,16 @@ class ExternalIntegrationForm extends BaseIntegrationForm
     protected function getIntegrationType()
     {
         return 'external';
+    }
+
+    public function dehydrate()
+    {
+        // Reset file properties when serializing to prevent errors except on steps 3 and 4
+        if (!in_array($this->currentStep, [3, 4])) {
+            $this->api_documentation_file = $this->api_documentation_file ? true : null;
+            $this->contract_file = $this->contract_file ? true : null;
+            $this->test_plan_file = $this->test_plan_file ? true : null;
+        }
     }
 
     public function render()

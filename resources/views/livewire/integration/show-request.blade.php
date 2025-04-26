@@ -230,7 +230,7 @@
                                 <td>{{ $attachment->uploader->name ?? 'Unknown' }}</td>
                                 <td>{{ $attachment->created_at->format('Y-m-d H:i') }}</td>
                                 <td>
-                                    <a href="{{ Storage::url($attachment->path) }}" class="btn btn-sm btn-info" target="_blank">
+                                    <a href="{{ route('attachments.download', $attachment->id) }}" class="btn btn-sm btn-info">
                                         <i class="fa fa-download"></i> Download
                                     </a>
                                 </td>

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AttachmentController;
 use App\Http\Controllers\RoleManagementController;
 use App\Livewire\Integration\CreateRequest;
 use App\Livewire\Integration\IntegrationsList;
@@ -131,3 +132,7 @@ Route::middleware(['auth', 'role:administrator'])->prefix('admin')->name('admin.
         ->middleware('permission:manage configuration');
 
 });
+
+Route::get('download-attachment/{id}', [AttachmentController::class, 'download'])
+    ->name('attachments.download')
+    ->middleware('auth');
