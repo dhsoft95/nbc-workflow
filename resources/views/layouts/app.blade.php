@@ -1,11 +1,11 @@
 <!doctype html>
 <html lang="en">
 <head>
-    <title>@yield('title', ':: Iconic :: Home')</title>
+    <title>@yield('title', ':: Workflow :: Home')</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <meta name="description" content="Iconic Laravel Admin Template">
-    <meta name="author" content="WrapTheme, design by: ThemeMakker.com">
+{{--    <meta name="author" content="WrapTheme, design by: ThemeMakker.com">--}}
     <link rel="icon" href="{{ asset('favicon.ico') }}" type="image/x-icon">
 
     <!-- VENDOR CSS -->
